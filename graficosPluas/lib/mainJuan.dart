@@ -1,4 +1,4 @@
-import 'dart:math';
+/*import 'dart:math';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -121,3 +121,48 @@ class OrdinalSales {
 
   OrdinalSales(this.year, this.sales);
 }
+*/
+
+import 'dart:io';
+import 'dart:convert';
+
+var gamesByCategory = <String, int>{};
+var gameCounts = {'multijugador': 0, 'no multijugador': 0};
+
+void main() {
+  
+
+  final filePath = 'datosPluas.csv'; // Reemplaza con el nombre real de tu archivo CSV
+  final csvFile = File(filePath);
+
+  if (csvFile.existsSync()) {
+    final contents = csvFile.readAsStringSync();
+    final lines = LineSplitter.split(contents);
+
+    final dataLines = lines.skip(1);
+
+  for (var line in dataLines) {
+    final values = line.split(';');
+    final isMultiplayer = values[4].trim().toLowerCase() == 'multijugador';
+
+    if (isMultiplayer) {
+      gameCounts['multijugador'] = (gameCounts['multijugador'] ?? 0) + 1;
+    } else {
+      gameCounts['no multijugador'] = (gameCounts['no multijugador'] ?? 0) + 1;
+    }
+  }
+  
+  for (var line in dataLines) {
+    final values = line.split(';');
+    final category = values[5].trim();
+
+    if (gamesByCategory.containsKey(category)) {
+      gamesByCategory[category] = (gamesByCategory[category] ?? 0) + 1;
+    } else {
+      gamesByCategory[category] = 1;
+    }
+  }
+}
+
+}
+

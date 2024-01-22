@@ -1,6 +1,7 @@
-import 'dart:io';
+import 'dart:async';
 import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 void main() {
@@ -13,248 +14,95 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: Text('Chart Example'),
+          title: Text('Gráfico de Barras'),
         ),
-        body: ChartSwitcher(),
+        body: FutureBuilder(
+          future: loadCSV(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return CircularProgressIndicator();
+            } else if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            } else {
+              return BarChartPage(data: snapshot.data!);
+            }
+          },
+        ),
       ),
     );
   }
-}
 
-class ChartSwitcher extends StatefulWidget {
-  @override
-  _ChartSwitcherState createState() => _ChartSwitcherState();
-}
+  Future<List<Map<String, dynamic>>> loadCSV() async {
+    String csvData = await rootBundle.loadString('assets/datosPluas.csv');
+    List<List<dynamic>> rowsAsListOfValues = CsvToListConverter().convert(csvData);
 
-class _ChartSwitcherState extends State<ChartSwitcher> {
-  int _selectedIndex = 0;
-  List<List<dynamic>> csvData = []; // Almacena los datos leídos del archivo CSV
+    List<String> headers = rowsAsListOfValues[0].map((e) => e.toString()).toList();
+    List<Map<String, dynamic>> data = [];
 
-  @override
-  void initState() {
-    super.initState();
-    _readCsv(); // Llamada a la función para leer el archivo CSV al inicializar el widget
-  }
-
-  Future<void> _readCsv() async {
-    final File file = File(
-        'ruta_del_archivo.csv'); // Reemplaza 'ruta_del_archivo.csv' con la ruta correcta de tu archivo CSV
-
-    if (await file.exists()) {
-      final List<List<dynamic>> data = await readCsv(file);
-      setState(() {
-        csvData = data;
-      });
-    } else {
-      print('El archivo no existe.');
+    for (int i = 1; i < rowsAsListOfValues.length; i++) {
+      Map<String, dynamic> row = {};
+      for (int j = 0; j < headers.length; j++) {
+        row[headers[j]] = rowsAsListOfValues[i][j];
+      }
+      data.add(row);
     }
-  }
 
-  Future<List<List<dynamic>>> readCsv(File file) async {
-    final String content = await file.readAsString();
-    final List<List<dynamic>> csvList = CsvToListConverter().convert(content);
-    return csvList;
+    return data;
   }
+}
+
+class BarChartPage extends StatelessWidget {
+  final List<Map<String, dynamic>> data;
+
+  BarChartPage({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.all(30.0),
-            child: _buildChart(),
-          ),
-        ),
-        BottomNavigationBar(
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart),
-              label: 'Barras',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.pie_chart),
-              label: 'Pastel',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.scatter_plot),
-              label: 'Dispersión',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          onTap: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-        ),
-      ],
-    );
-  }
+    Map<String, int> categoryCounts = {};
 
-  Widget _buildChart() {
-    switch (_selectedIndex) {
-      case 0:
-        return BarChartWidget();
-      case 1:
-        return PieChartWidget();
-      case 2:
-        return ScatterChartWidget();
-      default:
-        return Container();
+    for (var game in data) {
+      String category = game['Categorias'].toString();
+      categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
     }
-  }
-}
 
-class BarChartWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
+    List<String> categories = categoryCounts.keys.toList();
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
       child: BarChart(
         BarChartData(
-          alignment: BarChartAlignment.center,
-          barGroups: [
-            BarChartGroupData(
-              x: 0,
-              barRods: [
-                BarChartRodData(
-                  y: 8,
-                  colors: [Colors.blue],
-                ),
-              ],
-            ),
-            BarChartGroupData(
-              x: 1,
-              barRods: [
-                BarChartRodData(
-                  y: 12,
-                  colors: [Colors.green],
-                ),
-              ],
-            ),
-            BarChartGroupData(
-              x: 2,
-              barRods: [
-                BarChartRodData(
-                  y: 5,
-                  colors: [Colors.red],
-                ),
-              ],
-            ),
-          ],
-          borderData: FlBorderData(show: true),
+          groupsSpace: 12,
           titlesData: FlTitlesData(
-            leftTitles: SideTitles(
-              showTitles: true,
-              interval: 5,
-            ),
-            rightTitles: SideTitles(
-              showTitles: false,
-            ),
-            topTitles: SideTitles(
-              showTitles: true,
-              interval: 5,
-            ),
+            show: true,
             bottomTitles: SideTitles(
               showTitles: true,
+              margin: 16,
+              rotateAngle: 45,
               getTitles: (double value) {
-                switch (value.toInt()) {
-                  case 0:
-                    return 'A';
-                  case 1:
-                    return 'B';
-                  case 2:
-                    return 'C';
-                  default:
-                    return '';
+                if (value >= 0 && value < categories.length) {
+                  return categories[value.toInt()];
+                } else {
+                  return '';
                 }
               },
             ),
+            leftTitles: SideTitles(showTitles: true, margin: 12),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class PieChartWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      child: Stack(
-        children: [
-          PieChart(
-            PieChartData(
-              sections: [
-                PieChartSectionData(
-                  value: 8,
-                  color: Colors.blue,
-                  title: 'A',
-                  radius: 40,
-                  titleStyle: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-                PieChartSectionData(
-                  value: 12,
-                  color: Colors.green,
-                  title: 'B',
-                  radius: 40,
-                  titleStyle: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-                PieChartSectionData(
-                  value: 5,
-                  color: Colors.red,
-                  title: 'C',
-                  radius: 40,
-                  titleStyle: TextStyle(color: Colors.white, fontSize: 16),
+          borderData: FlBorderData(
+            show: true,
+            border: Border.all(color: const Color(0xff37434d), width: 1),
+          ),
+          barGroups: categories.asMap().entries.map((entry) {
+            return BarChartGroupData(
+              x: entry.key.toInt(),
+              barRods: [
+                BarChartRodData(
+                  y: categoryCounts[entry.value]?.toDouble() ?? 0.0,
+                  colors: [Colors.blue],
                 ),
               ],
-              borderData: FlBorderData(show: false),
-              sectionsSpace: 0,
-            ),
-          ),
-          Center(
-            child: Padding(
-              padding: EdgeInsets.all(30.0),
-              child: Text(
-                'Total',
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ScatterChartWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      child: ScatterChart(
-        ScatterChartData(
-          scatterSpots: [
-            ScatterSpot(100000, 5, radius: 15, color: Colors.blue),
-            ScatterSpot(50000, 8, radius: 20, color: Colors.green),
-            ScatterSpot(100, 12, radius: 25, color: Colors.red),
-          ],
-          borderData: FlBorderData(show: true),
-          gridData: FlGridData(show: true),
-          titlesData: FlTitlesData(
-            leftTitles: SideTitles(
-              showTitles: true,
-            ),
-            rightTitles: SideTitles(
-              showTitles: false,
-            ),
-            topTitles: SideTitles(
-              showTitles: false,
-            ),
-            bottomTitles: SideTitles(
-              showTitles: true,
-            ),
-          ),
+            );
+          }).toList(),
         ),
       ),
     );
