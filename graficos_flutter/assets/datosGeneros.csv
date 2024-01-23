@@ -1,0 +1,50 @@
+genero,Nombre;Precio;Fechas;Reseñas
+accion;Rust;$18.99;8 Feb, 2018;835,181
+accion;Hell Let Loose;$13.64;27 Jul, 2021;73,139
+accion;"Phasmophobia
+
+VR Supported";$7.79;18 Sep, 2020;527,345
+accion;Wallpaper Engine;$2.79;Nov 2018;680,477
+accion;Roboquest;$9.74;7 Nov, 2023;9,712
+accion;Party Animals;$13.49;20 Sep, 2023;30,014
+accion;Raft;$19.99;20 Jun, 2022;253,718
+accion;DayZ;$44.99;13 Dec, 2018;312,215
+accion;Terraria;$5.79;16 May, 2011;988,916
+accion;Valheim;$19.99;2 Feb, 2021;372,920
+Nombre;Precio;Fechas;Reseñas
+familia;Euro Truck Simulator 2;$2.52;12 Oct, 2012;537,939
+familia;House Flipper 2;$15.99;14 Dec, 2023;4,419
+familia;Party Animals;$13.49;20 Sep, 2023;30,014
+familia;Overcooked! 2;$12.49;7 Aug, 2018;41,054
+familia;"Five Nights at Freddy's: Help Wanted 2
+
+VR Only";$18.99;14 Dec, 2023;2,587
+familia;PowerWash Simulator;$19.99;14 Jul, 2022;37,186
+familia;Ultimate Chicken Horse;$3.59;4 Mar, 2016;29,704
+familia;A Little to the Left;$6.99;8 Nov, 2022;6,216
+familia;Escape Simulator;$7.99;19 Oct, 2021;11,504
+familia;Golf With Your Friends;$4.89;19 May, 2020;40,472
+Nombre;Precio;Fechas;Reseñas
+puzzle;"Five Nights at Freddy's: Help Wanted 2
+
+VR Only";$18.99;14 Dec, 2023;2,587
+puzzle;Car Mechanic Simulator 2021;$12.49;11 Aug, 2021;21,724
+puzzle;Outer Wilds;$12.99;18 Jun, 2020;51,724
+puzzle;Teardown;$15.99;21 Apr, 2022;78,387
+puzzle;Stray;$14.99;19 Jul, 2022;118,930
+puzzle;COCOON;$8.39;29 Sep, 2023;3,303
+puzzle;A Little to the Left;$6.99;8 Nov, 2022;6,216
+puzzle;Escape Simulator;$7.99;19 Oct, 2021;11,504
+puzzle;Chants of Sennaar;$11.99;5 Sep, 2023;8,534
+puzzle;Shadows of Doubt;$19.99;24 Apr, 2023;7,360
+Nombre;Precio;Fechas;Reseñas
+estrategia;Hell Let Loose;$13.64;27 Jul, 2021;73,139
+estrategia;RimWorld;$17.99;17 Oct, 2018;149,186
+estrategia;Raft;$19.99;20 Jun, 2022;253,718
+estrategia;Factorio;$17.00;14 Aug, 2020;140,868
+estrategia;Satisfactory;$29.99;8 Jun, 2020;130,457
+estrategia;Overcooked! 2;$12.49;7 Aug, 2018;41,054
+estrategia;Car Mechanic Simulator 2021;$12.49;11 Aug, 2021;21,724
+estrategia;Thronefall;$3.99;2 Aug, 2023;9,630
+estrategia;Pioneers of Pagonia;$14.99;13 Dec, 2023;2,108
+estrategia;Wartales;$17.99;12 Apr, 2023;20,828

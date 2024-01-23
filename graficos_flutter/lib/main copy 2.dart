@@ -18,55 +18,55 @@ class MyApp extends StatelessWidget {
           title: Text('Gráfico de Barras Horizontales'),
         ),
         body: Center(
-          child: HorizontalBarLabelChart.withSampleData(),
+          child: VerticalBarLabelChart.withSampleData(),
         ),
       ),
     );
   }
 }
 
-class HorizontalBarLabelChart extends StatelessWidget {
+class VerticalBarLabelChart extends StatelessWidget {
   final List<charts.Series<PeliculaGenero, String>> seriesList;
   final bool animate;
 
-  HorizontalBarLabelChart(this.seriesList, {this.animate = false});
+  VerticalBarLabelChart(this.seriesList, {this.animate = false});
 
   /// Creates a [BarChart] with sample data and no transition.
-  factory HorizontalBarLabelChart.withSampleData() {
-    return new HorizontalBarLabelChart(
-      _createSampleData(),
-// Disable animations for image tests.
+  factory VerticalBarLabelChart.withSampleData() {
+    return VerticalBarLabelChart(
+      _getData(),
+      // Disable animations for image tests.
       animate: false,
     );
   }
 
-// EXCLUDE_FROM_GALLERY_DOCS_START
-// This section is excluded from being copied to the gallery.
-// It is used for creating random series data to demonstrate animation in
-// the example app only.
-  factory HorizontalBarLabelChart.withRandomData() {
-    return new HorizontalBarLabelChart(_createRandomData());
+  // EXCLUDE_FROM_GALLERY_DOCS_START
+  // This section is excluded from being copied to the gallery.
+  // It is used for creating random series data to demonstrate animation in
+  // the example app only.
+  factory VerticalBarLabelChart.withRandomData() {
+    return VerticalBarLabelChart(_createRandomData());
   }
 
   /// Create random data.
   static List<charts.Series<PeliculaGenero, String>> _createRandomData() {
-    final random = new Random();
+    final random = Random();
 
     final data = [
-      new PeliculaGenero('Acción', random.nextInt(100)),
-      new PeliculaGenero('Familia', random.nextInt(100)),
-      new PeliculaGenero('Puzzle', random.nextInt(100)),
-      new PeliculaGenero('Estrategia', random.nextInt(100)),
+      PeliculaGenero('Acción', random.nextInt(100)),
+      PeliculaGenero('Familia', random.nextInt(100)),
+      PeliculaGenero('Puzzle', random.nextInt(100)),
+      PeliculaGenero('Estrategia', random.nextInt(100)),
     ];
 
     return [
-      new charts.Series<PeliculaGenero, String>(
+      charts.Series<PeliculaGenero, String>(
         id: 'Reviews',
         domainFn: (PeliculaGenero pelicula, _) => pelicula.genero,
         measureFn: (PeliculaGenero pelicula, _) => pelicula.resena,
         data: data,
         labelAccessorFn: (PeliculaGenero pelicula, _) =>
-            '<span class="math-inline">\{pelicula\.resena\.toString\(\)\}%',
+            '${pelicula.resena.toString()}%',
       ),
     ];
   }
@@ -81,22 +81,40 @@ class HorizontalBarLabelChart extends StatelessWidget {
     );
   }
 
-  /// Create one series with sample hard coded data.
-  static List<charts.Series<PeliculaGenero, String>> _createSampleData() {
-    final data = [
-      new PeliculaGenero('Acción', 70),
-      new PeliculaGenero('Familia', 25),
-      new PeliculaGenero('Puzzle', 35),
-      new PeliculaGenero('Estrategia', 75),
-    ];
+  /// Create one series with data from CSV file.
+  static List<charts.Series<PeliculaGenero, String>> _getData() {
+   
+    String path = "assets/datosGeneros.csv";
+    List<String> lineas = [];
+
+    try {
+      File file = File(path);
+      lineas = file.readAsLinesSync();
+      print(lineas);
+    } catch (e) {
+      print(e);
+    }
+    
+    List<PeliculaGenero> data = [];
+
+    for (int i = 0; i < lineas.length; i++) {
+      List<String> datos = lineas[i].split(';');
+      String genero = datos[0];
+      int resena = int.tryParse(datos[4]) ?? 0;
+      PeliculaGenero pelicula = PeliculaGenero(genero, resena);
+      print(pelicula.genero);
+      print(pelicula.resena);
+      data.add(pelicula);
+    }
+
     return [
-      new charts.Series<PeliculaGenero, String>(
+      charts.Series<PeliculaGenero, String>(
         id: 'Reviews',
         domainFn: (PeliculaGenero pelicula, _) => pelicula.genero,
         measureFn: (PeliculaGenero pelicula, _) => pelicula.resena,
         data: data,
         labelAccessorFn: (PeliculaGenero pelicula, _) =>
-            '\$${pelicula.resena.toString()}'
+            '${pelicula.resena.toString()}%',
       ),
     ];
   }
