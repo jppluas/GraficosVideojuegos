@@ -1,168 +1,290 @@
-/*import 'dart:math';
-import 'package:charts_flutter/flutter.dart' as charts;
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:csv/csv.dart';
+import 'package:intl/intl.dart';
 void main() {
   runApp(MyApp());
 }
-
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Gráfico de Barras Horizontales'),
-        ),
-        body: Center(
-          child: VerticalBarLabelChart.withSampleData(),
+      home: DefaultTabController(
+        length: 3, // Número total de pestañas (diagramas)
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('Gráficos'),
+            bottom: TabBar(
+              tabs: [
+                Tab(text: 'Barras'),
+                Tab(text: 'Dispersion'),
+                Tab(text: 'Linea de tiempo')
+              ],
+            ),
+          ),
+          body: TabBarView(
+            children: [BarChartPage(), ScatterChartSample(), LineChartSample()],
+          ),
         ),
       ),
     );
   }
 }
-class VerticalBarLabelChart extends StatelessWidget {
-  final List<charts.Series<dynamic, String>> seriesList;
-  final bool animate;
 
-  VerticalBarLabelChart(this.seriesList, {this.animate = false});
-
-  /// Creates a [BarChart] with sample data and no transition.
-  factory VerticalBarLabelChart.withSampleData() {
-    return new VerticalBarLabelChart(
-      _createSampleData(),
-      // Disable animations for image tests.
-      animate: false,
-    );
-  }
-
-  // EXCLUDE_FROM_GALLERY_DOCS_START
-  // This section is excluded from being copied to the gallery.
-  // It is used for creating random series data to demonstrate animation in
-  // the example app only.
-  factory VerticalBarLabelChart.withRandomData() {
-    return new VerticalBarLabelChart(_createRandomData());
-  }
-
-  /// Create random data.
-  static List<charts.Series<OrdinalSales, String>> _createRandomData() {
-    final random = new Random();
-
-    final data = [
-      new OrdinalSales('2014', random.nextInt(100)),
-      new OrdinalSales('2015', random.nextInt(100)),
-      new OrdinalSales('2016', random.nextInt(100)),
-      new OrdinalSales('2017', random.nextInt(100)),
-    ];
-
-    return [
-      new charts.Series<OrdinalSales, String>(
-          id: 'Sales',
-          domainFn: (OrdinalSales sales, _) => sales.year,
-          measureFn: (OrdinalSales sales, _) => sales.sales,
-          data: data,
-          // Set a label accessor to control the text of the bar label.
-          labelAccessorFn: (OrdinalSales sales, _) =>
-              '${sales.sales.toString()}')
-    ];
-  }
-  // EXCLUDE_FROM_GALLERY_DOCS_END
-
-  // [BarLabelDecorator] will automatically position the label
-  // inside the bar if the label will fit. If the label will not fit,
-  // it will draw outside of the bar.
-  // Labels can always display inside or outside using [LabelPosition].
-  //
-  // Text style for inside / outside can be controlled independently by setting
-  // [insideLabelStyleSpec] and [outsideLabelStyleSpec].
+class BarChartPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return new charts.BarChart(
-      seriesList,
-      animate: animate,
-      // Set a bar label decorator.
-      // Example configuring different styles for inside/outside:
-      //       barRendererDecorator: new charts.BarLabelDecorator(
-      //          insideLabelStyleSpec: new charts.TextStyleSpec(...),
-      //          outsideLabelStyleSpec: new charts.TextStyleSpec(...)),
-      barRendererDecorator: new charts.BarLabelDecorator<String>(),
-      domainAxis: new charts.OrdinalAxisSpec(),
+    // Implementación del gráfico de barras
+    return FutureBuilder(
+      future: loadCSV('datosGeneros.csv'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else {
+          List<Map<String, dynamic>> data =
+              snapshot.data as List<Map<String, dynamic>>;
+          List<String> generos =
+              data.map((item) => item['Generos'].toString()).toList();
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: BarChart(
+              BarChartData(
+                groupsSpace: 12,
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: SideTitles(
+                    showTitles: true,
+                    margin: 16,
+                    rotateAngle: 45,
+                    getTitles: (double value) {
+                      if (value >= 0 && value < generos.length) {
+                        return generos[value.toInt()];
+                      } else {
+                        return '';
+                      }
+                    },
+                  ),
+                  leftTitles: SideTitles(showTitles: true, margin: 12),
+                  rightTitles: SideTitles(showTitles: false, margin: 12),
+                  topTitles: SideTitles(showTitles: false, margin: 12),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border.all(color: const Color(0xff37434d), width: 1),
+                ),
+                barGroups: generos.asMap().entries.map((entry) {
+                  return BarChartGroupData(
+                    x: entry.key.toInt(),
+                    barRods: [
+                      BarChartRodData(
+                        y: data[entry.key]['reseñas'].toDouble(),
+                        colors: [Colors.blue],
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          );
+        }
+      },
     );
   }
 
-  /// Create one series with sample hard coded data.
-  static List<charts.Series<OrdinalSales, String>> _createSampleData() {
-    final data = [
-      new OrdinalSales('2014', 5),
-      new OrdinalSales('2015', 25),
-      new OrdinalSales('2016', 100),
-      new OrdinalSales('2017', 75),
+  Future<List<Map<String, dynamic>>> loadCSV(String fileName) async {
+    String csvData = await rootBundle.loadString('assets/$fileName');
+    List<List<dynamic>> rowsAsListOfValues =
+        CsvToListConverter().convert(csvData);
+    dynamic accion = 0;
+    dynamic familia = 0;
+    dynamic puzzle = 0;
+    dynamic estrategia = 0;
+
+    for (int i = 1; i < rowsAsListOfValues.length; i++) {
+      dynamic resenas = int.parse(rowsAsListOfValues[i]
+          .toString()
+          .replaceAll("]", "")
+          .split(";")[4]
+          .replaceAll(", ", ""));
+
+      String genero =
+          rowsAsListOfValues[i].toString().replaceAll("[", "").split(";")[0];
+
+      if (genero == "accion") {
+        accion += resenas;
+      }
+      if (genero == "familia") {
+        familia += resenas;
+      }
+      if (genero == "puzzle") {
+        puzzle += resenas;
+      }
+      if (genero == "estrategia") {
+        estrategia += resenas;
+      }
+    }
+    List<Map<String, dynamic>> data = [
+      {'Generos': 'Accion', 'reseñas': accion},
+      {'Generos': 'Familia', 'reseñas': familia},
+      {'Generos': 'Puzzle', 'reseñas': puzzle},
+      {'Generos': 'Estrategia', 'reseñas': estrategia},
     ];
 
-    return [
-      new charts.Series<OrdinalSales, String>(
-          id: 'Sales',
-          domainFn: (OrdinalSales sales, _) => sales.year,
-          measureFn: (OrdinalSales sales, _) => sales.sales,
-          data: data,
-          // Set a label accessor to control the text of the bar label.
-          labelAccessorFn: (OrdinalSales sales, _) =>
-              '\$${sales.sales.toString()}')
-    ];
+    return data;
   }
 }
 
-/// Sample ordinal data type.
-class OrdinalSales {
-  final String year;
-  final int sales;
+class ScatterChartSample extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: loadCSV('datosGallo.csv'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else {
+          List<Map<String, dynamic>> data =
+              snapshot.data as List<Map<String, dynamic>>;
 
-  OrdinalSales(this.year, this.sales);
-}
-*/
+          List<ScatterSpot> scatterSpots = data.map((item) {
+            double precio = item['precio'] as double;
+            double resena = item['resena'] as double;
+            return ScatterSpot(precio, resena);
+          }).toList();
 
-import 'dart:io';
-import 'dart:convert';
+          return Padding(
+            padding: EdgeInsets.all(16.0),
+            child: ScatterChart(
+              ScatterChartData(
+                scatterSpots: scatterSpots,
+                titlesData: FlTitlesData(
+                  leftTitles: SideTitles(showTitles: true),
+                  bottomTitles: SideTitles(showTitles: true),
+                ),
+                borderData: FlBorderData(show: true),
+                gridData: FlGridData(show: true),
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
 
-var gamesByCategory = <String, int>{};
-var gameCounts = {'multijugador': 0, 'no multijugador': 0};
+  Future<List<Map<String, dynamic>>> loadCSV(String fileName) async {
+    String csvData = await rootBundle.loadString('assets/$fileName');
+    List<dynamic> rowsAsListOfValues = CsvToListConverter().convert(csvData);
 
-void main() {
-  
+    List<Map<String, dynamic>> data = [];
 
-  final filePath = 'datosPluas.csv'; // Reemplaza con el nombre real de tu archivo CSV
-  final csvFile = File(filePath);
-
-  if (csvFile.existsSync()) {
-    final contents = csvFile.readAsStringSync();
-    final lines = LineSplitter.split(contents);
-
-    final dataLines = lines.skip(1);
-
-  for (var line in dataLines) {
-    final values = line.split(';');
-    final isMultiplayer = values[4].trim().toLowerCase() == 'multijugador';
-
-    if (isMultiplayer) {
-      gameCounts['multijugador'] = (gameCounts['multijugador'] ?? 0) + 1;
-    } else {
-      gameCounts['no multijugador'] = (gameCounts['no multijugador'] ?? 0) + 1;
+    for (int i = 1; i < rowsAsListOfValues.length; i++) {
+      if (rowsAsListOfValues[i].toString().split(";").length == 4) {
+        dynamic precio = double.parse(rowsAsListOfValues[i]
+            .toString()
+            .split(";")[1]
+            .replaceAll("\$", ""));
+        dynamic resena = int.parse(rowsAsListOfValues[i]
+            .toString()
+            .split(";")[3]
+            .replaceAll("]", "")
+            .replaceAll(", ", ""));
+        data.add({'precio': precio, 'resena': resena});
+      }
     }
+    return data;
   }
-  
-  for (var line in dataLines) {
-    final values = line.split(';');
-    final category = values[5].trim();
+}
 
-    if (gamesByCategory.containsKey(category)) {
-      gamesByCategory[category] = (gamesByCategory[category] ?? 0) + 1;
-    } else {
-      gamesByCategory[category] = 1;
+class LineChartSample extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: loadCSV('datosGallo.csv'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else {
+          List<Map<String, dynamic>> data =
+              snapshot.data as List<Map<String, dynamic>>;
+
+          List<FlSpot> spots = data.map((entry) {
+            DateTime fecha = DateFormat('d-MMM-yyyy').parse(entry['fecha']);
+            double tiempo = fecha.millisecondsSinceEpoch.toDouble(); // Convertir la fecha a milisegundos desde la época
+            double positividad = entry['resena'].toDouble();
+            return FlSpot(tiempo, positividad);
+          }).toList();
+
+          return Padding(
+            padding: EdgeInsets.all(16.0),
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(show: true),
+                titlesData: FlTitlesData(
+                  bottomTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 22,
+                    margin: 10,
+                    getTitles: (value) {
+                      // Convertir milisegundos desde la época a una cadena de fecha
+                      return DateFormat('dd MMM').format(DateTime.fromMillisecondsSinceEpoch(value.toInt()));
+                    },
+                  ),
+                  leftTitles: SideTitles(showTitles: true),
+                ),
+                borderData: FlBorderData(show: true),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    colors: [Colors.blue],
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(show: false),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> loadCSV(String fileName) async {
+    String csvData = await rootBundle.loadString('assets/$fileName');
+    List<dynamic> rowsAsListOfValues = CsvToListConverter().convert(csvData);
+
+    List<Map<String, dynamic>> data = [];
+
+    for (int i = 1; i < rowsAsListOfValues.length; i++) {
+      if (rowsAsListOfValues[i].toString().split(";").length == 4) {
+       
+        dynamic fecha = rowsAsListOfValues[i].toString().split(";")[2].replaceAll(",  ", "-").replaceAll(" ", "-");
+        
+        dynamic tiempo = DateFormat('d-MMM-yyyy').parse(fecha).millisecondsSinceEpoch.toDouble();
+        
+        dynamic positividad = double.parse(rowsAsListOfValues[i]
+            .toString()
+            .split(";")[3]
+            .replaceAll("]", "")
+            .replaceAll(", ", ""));
+        
+        // Agregar datos a la lista
+        data.add({'fecha': fecha, 'tiempo': tiempo, 'resena': positividad});
+      }
     }
+    print(data);
+
+    return data;
   }
 }
-
-}
-
